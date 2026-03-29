@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Fridge Chef AI</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+</head>
+
+<body style="text-align:center;font-family:Arial;background:#111;color:white;">
+
+<h1>🍳 Fridge Chef AI</h1>
+
+<button onclick="startCamera()">Start Camera</button>
+<button onclick="capture()">Capture</button>
+
+<br><br>
+
+<video id="video" autoplay playsinline width="300"></video>
+<canvas id="canvas" style="display:none;"></canvas>
+<img id="photo" width="300">
+
+<div id="result"></div>
+
+<script>
+let stream;
+
+async function startCamera() {
+  stream = await navigator.mediaDevices.getUserMedia({
+    video: { facingMode: "environment" }
+  });
+  video.srcObject = stream;
+}
+
+function capture() {
+  const canvas = document.getElementById("canvas");
+  const video = document.getElementById("video");
+  const img = document.getElementById("photo");
+
+  canvas.width = video.videoWidth;
+  canvas.height = video.videoHeight;
+  canvas.getContext("2d").drawImage(video, 0, 0);
+
+  const base64 = canvas.toDataURL("image/png");
+  img.src = base64;
+
+  analyze(base64);
+}
+
+async function analyze(image) {
+  const apiKey = "AIzaSyDiyYPAiLI0JKpODY-mbfAGf84EMZRgrmA";
+
+  const res = await fetch(
+    "https://generativelanguage.googleapis.com/v1/models/gemini-pro-vision:generateContent?key=" + apiKey,
+    {
+      method: "POST",
+      headers: {"Content-Type": "application/json"},
+      body: JSON.stringify({
+        contents: [{
+          parts: [
+            { text: "Identify ingredients and suggest recipes" },
+            { inlineData: { mimeType: "image/png", data: image.split(",")[1] } }
+          ]
+        }]
+      })
+    }
+  );
+
+  const data = await res.json();
+  document.getElementById("result").innerText =
+    data.candidates?.[0]?.content?.parts?.[0]?.text || "No result";
+}
+</script>
+
+</body>
+  </html>
